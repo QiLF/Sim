@@ -1,0 +1,46 @@
+Date: Thursday, 2018.8.9
+1802051275 Qi Linfeng, 1500012829 Chen Yanqi
+Game Name: SIM
+Requirments: 
+	   1.If you just want to run it: Python3
+	   2.If you'd like to run the solver to create the databases yourself(actually we have 
+	   already provide them for you): An integrated development environment that supports 
+	   the C++11 standard.
+Documents description:
+	   1.python files
+			sim.py:
+			settings.py: settings of the game
+			game_functions.py:
+	   2.databases
+			values.txt: a values list(WIN or LOSE)
+			remt.txt: a remotenesses list(how many steps to a primitive of the game)
+			hash: a 15-bit ternary number to an index of other two databases
+	   3.img: two images of the buttons
+	   4.solver: C++ files for solving the Sim. If you want to generate database on your own, after
+	     running the main.cpp, please copy all new database files to folder "databases" mentioned 
+	     above.
+	   5.other files: libs of python and files created by Pycharm
+How to generate database:
+     1.Just compile and run /solver/main.cpp, the compiler need C++11 support.
+How we made it:
+	   1. We use c++ to strongly solve the game ande create databases. 
+	   2. We use python to read the databases and implement a GUI.
+How to start: 
+	   1.Just run "sim.py" then you can enjoy the game(make sure you have installed Python3)
+	   2.We privide two modes for you to play with your friends or play against the computer;
+		 you can click "pve" or "pvp" buttons to start the game.
+	   3.If you want to restart the game or change mode, just click "pvp" or "pve" button again.
+	   4.You can click the checkbox to get hints. 
+		 1)Green line means if you choose it, you should win. Conversely, red means if you choose
+		   it, you should lose.
+		 2)You can see the closest distance to victory or the furthest distance from failure.
+		 3)When your cursor enters an uncolored line, you will see what the result should be if
+		   you choose it.
+	   5.You can click "quit" button to quit the game if you want.
+Rules: 
+	   1.Two players take turns coloring any uncolored lines. One player colors in one color,
+		 and the other colors in another color.
+	   2.Each player should try to avoid the creation of a triangle made solely of their color.
+         (only triangles with the dots as corners count;intersections of lines arenot relevant)
+     3.The player who completes such a triangle loses immediately.
+	   

@@ -1,24 +1,6 @@
 import tkinter as tk
 from database import *
-dots = [(400, 50),  (573, 150), (573, 350), (400, 450), (227, 350), (227, 150)]
-UN_COLORED = "gray"
-COLOR1 = "blue"
-COLOR2 = "orange"
-# COLOR_LOSE = "red"
-# COLOR_WIN = "green"
-win_colors = ["#00ff00", "#08ff08", "#10ff10", "#18ff18", "#20ff20", "#28ff28", "#30ff30", "#38ff38", "#40ff40", \
-              "#48ff48", "#50ff50", "#58ff58", "#60ff60", "#68ff68", "#70ff70"]
-lose_colors = ["#ff0000", "#ff0808", "#ff1010", "#ff1818", "#ff2020", "#ff2828", "#ff3030", "#ff3838", "#ff4040", \
-               "#ff4848", "#ff5050", "#ff5858", "#ff6060", "#ff6868", "#ff7070"]
-LOCKED = ""
-STATUS = [UN_COLORED for i in range(15)]  # STATUS: gray, blue, orange
-play1_flag = True
-hints_flag = False
-ternary_num = ['0' for x in range(15)]  # 15bit
-pve_flag = False
-p1_name = "p1"
-p2_name = "p2"
-prediction = ""
+from settings import *
 
 
 def pvp():
@@ -31,69 +13,6 @@ def pve():
     pve_flag = True
 
 
-def line_enter(canvas, n):
-    def enter(event):
-        if STATUS[n] == UN_COLORED:
-            canvas.itemconfig("line"+str(n), width=6)
-    return enter
-
-
-def line_leave(canvas, n):
-    def leave(event):
-        if STATUS[n] == UN_COLORED:
-            canvas.itemconfigure("line"+str(n), width=3)
-    return leave
-
-
-def change_line_color(canvas, n):
-    def change_color(event):
-        global play1_flag
-        global prediction
-        if STATUS[n] == UN_COLORED:
-            if play1_flag:
-                canvas.itemconfigure("line"+str(n), fill=COLOR1)
-                STATUS[n] = COLOR1
-                ternary_num[n] = '1'
-                play1_flag = not play1_flag
-                get_prediction()
-                show_result()
-                if pve_flag:
-                    computer_turn(canvas)
-            else:
-                canvas.itemconfigure("line"+str(n), fill=COLOR2)
-                STATUS[n] = COLOR2
-                ternary_num[n] = '2'
-                play1_flag = not play1_flag
-                show_result()
-        update_lines_color(canvas)
-    return change_color
-
-
-def get_hint_color(i):
-    predict_ternary_num = ternary_num[:]  # copy
-    if play1_flag:
-        predict_ternary_num[i] = '1'
-        predict_ternary_num = ternary2ten(predict_ternary_num)
-        index = get_index(predict_ternary_num)
-        remoteness = get_remoteness(index)
-        predict_value = get_value(index)
-        return get_color_by_value(predict_value, remoteness)
-    else:
-        predict_ternary_num[i] = '2'
-        predict_ternary_num = ternary2ten(predict_ternary_num)
-        index = get_index(predict_ternary_num)
-        remoteness = get_remoteness(index)
-        predict_value = get_value(index)
-        return get_color_by_value(predict_value, remoteness)
-
-
-def get_color_by_value(my_value, remoteness):
-    if my_value == "WIN":
-        return lose_colors[remoteness]
-    elif my_value == "LOSE":
-        return win_colors[remoteness]
-
-
 def draw_lines(canvas):
     line_label = 0
     for i in range(0, 6):
@@ -104,7 +23,7 @@ def draw_lines(canvas):
                                dot2,
                                tags=("line" + str(line_label)),
                                fill=UN_COLORED,
-                               width=3)
+                               width=LINE_WIDTH_UNCOLORED)
             line_label += 1
 
 
@@ -116,36 +35,29 @@ def events_bind(canvas):
         canvas.tag_bind(tag, sequence="<Button-1>", func=change_line_color(canvas, i))
 
 
-def game_start(canvas, mode):
-    def start():
-        global play1_flag
-        for i in range(15):
-            canvas.itemconfig("line"+str(i), fill=UN_COLORED, width=3)
-            ternary_num[i] = '0'  # reset the ternary num
-            STATUS[i] = UN_COLORED
-        play1_flag = True
-        manage_hints(canvas)
-        game_mode = mode
-        if game_mode == "pvp":
-            pvp()
-        elif game_mode == "pve":
-            pve()
-    return start
+def line_enter(canvas, n):
+    def enter(event):
+        if STATUS[n] == UN_COLORED:
+            canvas.itemconfig("line"+str(n), width=LINE_WIDTH_COLORED)
+            get_next_prediction(n)
+            update_prediction_text(canvas)
+    return enter
 
 
-def show_hints(canvas):
-    canvas.create_oval((650, 200), (675, 225), tags="hints", fill="green")
-    canvas.create_oval((650, 250), (675, 275), tags="hints", fill="red")
-    canvas.create_text((700, 213), text="WIN", tags="hints", font="Times 16 bold")
-    canvas.create_text((710, 263), text="LOSE", tags="hints", font="Times 16 bold")
-    canvas.create_text((650, 300), text=prediction, tags="hints", font="Times 16 bold")
+def line_leave(canvas, n):
+    def leave(event):
+        if STATUS[n] == UN_COLORED:
+            canvas.itemconfigure("line"+str(n), width=LINE_WIDTH_UNCOLORED)
+        get_prediction()
+        update_prediction_text(canvas)
+    return leave
 
 
-def hide_hints(canvas):
-    canvas.delete("hints")
+def ternary2ten(array):
+    num_base10 = 0
     for i in range(15):
-        if STATUS[i] == UN_COLORED:
-            canvas.itemconfig("line"+str(i), fill=UN_COLORED)
+        num_base10 += int(array[i])*(3 ** i)
+    return num_base10
 
 
 def get_index(num):
@@ -160,28 +72,6 @@ def get_remoteness(index):
     return remoteness_database[index]
 
 
-def update_lines_color(canvas):
-    if hints_flag:
-        for i in range(15):
-            if STATUS[i] == UN_COLORED:
-                canvas.itemconfig("line" + str(i), fill=get_hint_color(i))
-    else:
-        hide_hints(canvas)
-
-
-def manage_hints(canvas):
-    def hints():
-        global hints_flag
-        hints_flag = not hints_flag
-        if hints_flag:
-            show_hints(canvas)
-        else:
-            hide_hints(canvas)
-        get_prediction()
-        update_lines_color(canvas)
-    return hints
-
-
 def is_primitive(index):
     if get_remoteness(index) == 0:
         return True
@@ -193,7 +83,19 @@ def primitive(index):
     return get_value(index)
 
 
-def show_result():
+def lock_lines():
+    for i in range(15):
+        STATUS[i] = LOCKED
+
+
+def get_current_value_and_remt():
+    current_index = get_index(ternary2ten(ternary_num))
+    current_value = get_value(current_index)
+    current_remt = get_remoteness(current_index)
+    return current_value, current_remt
+
+
+def is_game_end():
     index = get_index(ternary2ten(ternary_num))
     if is_primitive(index):
         primitive_value = primitive(index)
@@ -215,18 +117,148 @@ def show_result():
         lock_lines()
         result_text.pack()
         top.mainloop()
+#######################################################################################################################
 
 
-def lock_lines():
+def next_turn():
+    global play1_flag
+    play1_flag = not play1_flag
+
+
+def change_line_color(canvas, n):
+    def change_color(event):
+        global play1_flag
+        if STATUS[n] == UN_COLORED:
+            if play1_flag:
+                canvas.itemconfigure("line"+str(n), fill=COLOR1)
+                STATUS[n] = COLOR1
+                ternary_num[n] = '1'
+                next_turn()
+                is_game_end()
+                if pve_flag:
+                    computer_turn(canvas)
+            else:
+                canvas.itemconfigure("line"+str(n), fill=COLOR2)
+                STATUS[n] = COLOR2
+                ternary_num[n] = '2'
+                next_turn()
+                is_game_end()
+        update_lines_color(canvas)
+        get_prediction()
+        update_prediction_text(canvas)
+    return change_color
+
+
+def get_hint_color(i):
+    predict_ternary_num = ternary_num[:]  # copy
+    # if play1_flag:
+    predict_ternary_num[i] = '1' if play1_flag else '2'
+    predict_ternary_num = ternary2ten(predict_ternary_num)
+    index = get_index(predict_ternary_num)
+    remoteness = get_remoteness(index)
+    predict_value = get_value(index)
+    return get_color_by_value(predict_value, remoteness)
+
+
+def get_color_by_value(my_value, remoteness):
+    remts_win_dict, remts_lose_dict = classify_remoteness()
+    if my_value == "WIN":
+        remts_num = len(remts_win_dict.keys())
+        index = sorted(remts_win_dict.keys()).index(remoteness)
+        return lose_colors[14*index//remts_num]
+    elif my_value == "LOSE":
+        index = sorted(remts_lose_dict.keys()).index(remoteness)
+        remts_num = len(remts_lose_dict.keys())
+        return win_colors[14*index//remts_num]
+
+
+def classify_remoteness():
+    remts_lose = {}
+    remts_win = {}
     for i in range(15):
-        STATUS[i] = LOCKED
+        if STATUS[i] == UN_COLORED:
+            predict_ternary_num = ternary_num[:]  # copy
+            predict_ternary_num[i] = '1' if play1_flag else '2'
+            predict_ternary_num = ternary2ten(predict_ternary_num)
+            index = get_index(predict_ternary_num)
+            predict_value = get_value(index)
+            predict_remt = get_remoteness(index)
+            if predict_value == "WIN":
+                if predict_remt not in remts_win:
+                    remts_win[predict_remt] = []
+                remts_win[predict_remt].append(i)
+            elif predict_value == "LOSE":
+                if predict_remt not in remts_lose:
+                    remts_lose[predict_remt] = []
+                remts_lose[predict_remt].append(i)
+    return remts_win, remts_lose
 
 
-def get_current_value_and_remt():
-    current_index = get_index(ternary2ten(ternary_num))
-    current_value = get_value(current_index)
-    current_remt = get_remoteness(current_index)
-    return current_value, current_remt
+def game_start(canvas, mode):
+    def start():
+        global play1_flag
+        for i in range(15):
+            canvas.itemconfig("line"+str(i), fill=UN_COLORED, width=LINE_WIDTH_UNCOLORED)
+            ternary_num[i] = '0'  # reset the ternary num
+            STATUS[i] = UN_COLORED
+        play1_flag = True
+        manage_hints(canvas)
+        update_lines_color(canvas)
+        game_mode = mode
+        if game_mode == "pvp":
+            pvp()
+        elif game_mode == "pve":
+            pve()
+    return start
+
+
+def show_hints(canvas):
+    canvas.create_oval((650, 200), (675, 225), tags="hints", fill="green")
+    canvas.create_oval((650, 250), (675, 275), tags="hints", fill="red")
+    canvas.create_text((700, 213), text="WIN", tags="hints", font="Times 16 bold")
+    canvas.create_text((710, 263), text="LOSE", tags="hints", font="Times 16 bold")
+    canvas.create_text((700, 330), text=prediction, tags="hints_prediction", font="Times 16 bold")
+
+
+def show_players(canvas):
+    canvas.create_oval((50, 200), (75, 225), fill=COLOR1)
+    canvas.create_oval((50, 250), (75, 275), fill=COLOR2)
+    canvas.create_text((125, 213), text="Player1", font="Times 16 bold")
+    canvas.create_text((125, 263), text="Player2", font="Times 16 bold")
+
+
+def hide_hints(canvas):
+    canvas.delete("hints")
+    canvas.delete("hints_prediction")
+    for i in range(15):
+        if STATUS[i] == UN_COLORED:
+            canvas.itemconfig("line"+str(i), fill=UN_COLORED)
+
+
+def update_lines_color(canvas):
+    if hints_flag:
+        for i in range(15):
+            if STATUS[i] == UN_COLORED:
+                canvas.itemconfig("line" + str(i), fill=get_hint_color(i))
+    else:
+        hide_hints(canvas)
+
+
+def update_prediction_text(canvas):
+    canvas.itemconfig("hints_prediction", text=prediction)
+
+
+def manage_hints(canvas):
+    def hints():
+        global hints_flag
+        hints_flag = not hints_flag
+        if hints_flag:
+            get_prediction()
+            show_hints(canvas)
+        else:
+            hide_hints(canvas)
+        update_lines_color(canvas)
+    return hints
 
 
 def make_decision():
@@ -249,7 +281,7 @@ def make_decision():
                         next_line_label = i
         return next_line_label
     elif current_value == "LOSE":
-        max_remt2lose = 0
+        max_remt2lose = -1
         next_line_label = 0
         for i in range(15):
             if STATUS[i] == UN_COLORED:
@@ -265,21 +297,13 @@ def make_decision():
 
 
 def computer_turn(canvas):
-    global play1_flag
     next_line_label = make_decision()
-    canvas.itemconfigure("line" + str(next_line_label), fill=COLOR2, width=6)
+    canvas.itemconfigure("line" + str(next_line_label), fill=COLOR2, width=LINE_WIDTH_COLORED)
     STATUS[next_line_label] = COLOR2
     ternary_num[next_line_label] = '2'
-    play1_flag = not play1_flag
+    next_turn()
     get_prediction()
-    show_result()
-
-
-def ternary2ten(array):
-    num_base10 = 0
-    for i in range(15):
-        num_base10 += int(array[i])*(3 ** i)
-    return num_base10
+    is_game_end()
 
 
 def get_prediction():
@@ -287,38 +311,33 @@ def get_prediction():
     current_value, current_remt = get_current_value_and_remt()
     if play1_flag:
         if current_value == "WIN":
-            prediction = p1_name + "should win in " + str(current_remt)
+            prediction = p1_name + " should\n win in " + str(current_remt)
         elif current_value == "LOSE":
-            prediction = p2_name + "should win in " + str(current_remt)
+            prediction = p1_name + " should\n lose in " + str(current_remt)
     else:
         if current_value == "WIN":
-            prediction = p1_name + "should win in " + str(current_remt)
+            prediction = p2_name + " should\n win in " + str(current_remt)
         elif current_value == "LOSE":
-            prediction = p1_name + "should win in " + str(current_remt)
-'''
-def get_names():
-    names = ()
-    return names
+            prediction = p2_name + " should\n lose in " + str(current_remt)
 
 
-def input_names_pvp(master):
-    top = tk.Toplevel()
-    top.title("Your Name")
-    p1name_text = tk.Text("Player1's Name")
-    p2name_text = tk.Text("Player2's Name")
-    verify_button = tk.Button(top,
-                              text="OK",
-                              font="Times 16 bold")
-
-
-    # p1name_text.pack()
-    # p2name_text.pack()
-    # verify_button.pack()
-    # top.mainloop()
-
-
-def input_names_pve():
-    top = tk.Toplevel()
-    top.title("Your Name")
-    tk.Text("Your Name")
-'''
+def get_next_prediction(line_label):
+    global prediction
+    predict_ternary_num = ternary_num[:]
+    if play1_flag:
+        predict_ternary_num[line_label] = '1'
+    else:
+        predict_ternary_num[line_label] = '2'
+    predict_index = get_index(ternary2ten(predict_ternary_num))
+    predict_value = get_value(predict_index)
+    predict_remt = get_remoteness(predict_index)
+    if play1_flag:
+        if predict_value == "LOSE":
+            prediction = "If choose this\n" + p1_name + " should\n win in " + str(predict_remt)
+        elif predict_value == "WIN":
+            prediction = "If choose this\n" + p1_name + " should\n lose in " + str(predict_remt)
+    else:
+        if predict_value == "LOSE":
+            prediction = "If choose this\n" + p2_name + " should\n win in " + str(predict_remt)
+        elif predict_value == "WIN":
+            prediction = "If choose this\n" + p2_name + " should\n lose in " + str(predict_remt)

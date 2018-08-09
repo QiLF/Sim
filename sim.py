@@ -1,8 +1,5 @@
-import tkinter as tk
 from PIL import ImageTk
-from database import *
 from game_functions import *
-import struct
 
 title = "Welcome to Sim!"
 rules = "1.Two players take turns coloring any uncolored lines.\nOne player colors in one color, " \
@@ -57,7 +54,6 @@ hint_checkbox = tk.Checkbutton(game_frame,
                                text="Show Hints",
                                font="Times 16 bold",
                                command=manage_hints(canvas))
-var_hint_checkbox = tk.Checkbutton
 # p1name_text = tk.Text()
 # p2name_text = tk.Text()
 
@@ -75,8 +71,18 @@ def window_init():
 
 
 window_init()
+show_players(canvas)
 events_bind(canvas)
 master.mainloop()
-
-
-
+'''
+test = ['2', '2', '1', '0', '0', '0', '0', '1', '1', '0', '0', '1', '0', '0', '2']
+p_index = get_index(ternary2ten(test))
+print(get_value(p_index))
+for i in range(15):
+    if test[i]=='0':
+        temp = test[:]
+        temp[i] = '2'
+        num = ternary2ten(temp)
+        index = get_index(num)
+        print(index,get_value(index))
+'''
